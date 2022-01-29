@@ -4,7 +4,7 @@ class Environment {
         this.parent = par;
     }
 
-    create(name, value) {
+    define(name, value) {
         this.record[name] = value;
         return value;
     }
@@ -19,9 +19,9 @@ class Environment {
     }
 
     resolve(name) {
-        if (this.record.hasOwnProperty(name)) return this.record;
+        if (this.record.hasOwnProperty(name)) return this;
         if (this.parent == null) throw new ReferenceError(`Could not resolve variable '${name}'`);
-        if (this.parent.hasOwnProperty(name)) return this.parent;
+        if (this.parent.record.hasOwnProperty(name)) return this.parent;
 
         return this.parent.resolve(name);
     }

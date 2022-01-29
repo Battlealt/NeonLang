@@ -1,16 +1,21 @@
 const Environment = require('./environment');
 
 class Interpreter {
-    eval(exp, env) {
+    eval(exp, env=GlobalEnvironment) {
         const isTypeof = t => exp?.type?.toLowerCase() === t.toLowerCase();
 
         if (this._isString(exp)) return exp;
         if (this._isNumber(exp)) return exp;
 
+        // Type related stuff:
         if (isTypeof('NUMBER')) {
             return exp?.value;
         }
+        if (isTypeof('STRING')) {
+            return exp?.value;
+        }
 
+        // Math related stuff:
         if (isTypeof('BINARY')) {
             return this.handleBinaryExpression(exp);
         }
@@ -19,6 +24,31 @@ class Interpreter {
             return Number(exp?.operator + this.eval(exp?.value));
         }
 
+        // Variable related stuff:
+        if (isTypeof('IDENTIFIER')) {
+            return env.lookup(exp?.value);
+        }
+        
+        if (isTypeof('DEFINE')) {
+            return env.define(exp?.name?.value, this.eval(exp?.value));
+        }
+
+        // Functions
+        if (isTypeof('FUNCTION_CALL')) {
+            let func = env.lookup(exp?.name?.value);
+            
+            // Native functions
+            if (typeof func === 'function') {
+                return func(...exp?.arguments.map(val=>this.eval(val)));
+            }
+
+            // User functions
+        }
+
+        // Block
+        if (isTypeof('BLOCK')) {
+            return this.evalBlock(exp?.body, env);
+        }
         if (isTypeof('PROGRAM')) {
             let res;
             exp.body.forEach(item=>{
@@ -26,6 +56,9 @@ class Interpreter {
             });
             return res;
         }
+
+        // Unknown
+        throw new Error(`Unknown execution: ${exp}`);
     }
 
     evalBlock(blk, env) {
@@ -66,12 +99,12 @@ class Interpreter {
     }
 }
 
-const GlobalScope = new Environment({
+const GlobalEnvironment = new Environment({
     VER: '1.0.0',
     OS: process.platform,
     
     // Native functions
-    print(txt) { console.log(txt); },
+    print(txt) { console.log(txt); return txt; },
 });
 
 module.exports = Interpreter;

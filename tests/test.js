@@ -14,6 +14,8 @@ function test(code, expec) {
 const tests = [
     require('./numbers'),
     require('./math-operations'),
+    require('./variables'),
+    require('./native-functions'),
 ];
 const manualTests = [
     23

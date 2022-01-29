@@ -43,8 +43,28 @@ module.exports = class Parser {
         return this.primaryStatement();
     }
 
+    variableExpression() {
+        if (this.next?.type !== 'DEFINE') return this.unary();
+        
+        this.advance('DEFINE');
+        let name = this.next;
+        this.advance('IDENTIFIER');
+        
+        if (this.next?.type === 'ASSIGNMENT') {
+            this.advance('ASSIGNMENT');
+            let value = this.statement();
+
+            return {
+                type: 'DEFINE',
+                name,
+                value,
+            }
+        }
+        return name;
+    }
+
     exponentExpression() {
-        return this.binaryExpression('unary', 'isPower');
+        return this.binaryExpression('variableExpression', 'isPower');
     }
 
     multiplicationExpression() {
@@ -91,6 +111,35 @@ module.exports = class Parser {
         return body;
     }
 
+    argumentList(stopAt='RPAREN') {
+        let args = [];
+        if (this.next?.type !== stopAt) {
+            do {
+                if (this.next?.type === stopAt) break;
+                args.push(this.statement());
+            } while (this.next?.type === 'SEPERATOR' && this.advance('SEPERATOR'));
+        }
+        return args;
+    }
+
+    functionCall(name) {
+        this.advance('LPAREN', '(');
+        const args = this.argumentList('RPAREN');
+        this.advance('RPAREN', ')');
+        return {
+            type: 'FUNCTION_CALL',
+            name,
+            arguments: args,
+        }
+    }
+
+    identifier() {
+        let identifier = this.next;
+        this.advance('IDENTIFIER');
+        if (this.next?.type === 'LPAREN') return this.functionCall(identifier);
+        return identifier;
+    }
+
     primaryStatement() {
         switch (this.next?.type) {
             case 'EXPR_END':
@@ -106,6 +155,8 @@ module.exports = class Parser {
                 return this.parenthesizedExpression();
             case 'OPERATOR':
                 return this.unary();
+            case 'IDENTIFIER':
+                return this.identifier();
             default:
                 const r = this.next;
                 this.advance();

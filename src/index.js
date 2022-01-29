@@ -1,6 +1,5 @@
 const testCode = `
-1+1;
--3
+function()
 `; // 1+1-3
 
 const Lexer = require('./lexer');
