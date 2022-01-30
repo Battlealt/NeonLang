@@ -17,6 +17,8 @@ const tests = [
     require('./variables'),
     require('./native-functions'),
     require('./user-functions'),
+    require('./variable-assign'),
+    require('./linked'),
 ];
 const manualTests = [
     23

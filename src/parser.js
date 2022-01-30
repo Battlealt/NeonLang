@@ -10,11 +10,14 @@ module.exports = class Parser {
 
     stringStatement() {
         let s = this.next;
-        this.advance('STRING');
         s = {
             type: 'STRING',
             value: StringHandle(s.value.slice(1, -1))
         };
+        this.advance('STRING');
+        if (this.next?.type === 'OBJ_SEPERATOR') {
+            return this.linked(s);
+        }
         return s;
     }
 
@@ -22,6 +25,9 @@ module.exports = class Parser {
         let r = this.next;
         r.value = Number(r?.value);
         this.advance('NUMBER');
+        if (this.next?.type === 'OBJ_SEPERATOR') {
+            return this.linked(r);
+        }
         return r;
     }
 
@@ -114,6 +120,14 @@ module.exports = class Parser {
         this.advance('LPAREN');
         const body = this.statement();
         this.advance('RPAREN');
+
+        switch (this.next?.type) {
+            case 'LPAREN':
+                return this.functionCall(body);
+            case 'OBJ_SEPERATOR':
+                return this.linked(body);
+        }
+
         return body;
     }
 
@@ -132,6 +146,7 @@ module.exports = class Parser {
         this.advance('LPAREN', '(');
         const args = this.argumentList('RPAREN');
         this.advance('RPAREN', ')');
+
         return {
             type: 'FUNCTION_CALL',
             name,
@@ -150,6 +165,17 @@ module.exports = class Parser {
         };
     }
 
+    linked(w) {
+        this.advance('OBJ_SEPERATOR', '.');
+        let other = this.identifier();
+        
+        return {
+            type: 'LINKED',
+            with: w,
+            other,
+        }
+    }
+
     identifier() {
         let identifier = this.next;
         this.advance('IDENTIFIER');
@@ -159,6 +185,8 @@ module.exports = class Parser {
                 return this.functionCall(identifier);
             case 'ASSIGNMENT':
                 return this.assignment(identifier);
+            case 'OBJ_SEPERATOR':
+                return this.linked(identifier);
         }
 
         return identifier;
@@ -167,11 +195,15 @@ module.exports = class Parser {
     functionDefinition() {
         // Get function name
         this.advance('F_DEFINE');
-        const name = this.next;
-        this.advance('IDENTIFIER');
+        let name = this.next;
+        this.advance();
 
         // Get the arguments
-        this.advance('LPAREN');
+        if (name?.type !== 'LPAREN') {
+            this.advance('LPAREN');
+        } else {
+            name = null;
+        }
         let argNames = this.argumentList('RPAREN');
         this.advance('RPAREN');
 

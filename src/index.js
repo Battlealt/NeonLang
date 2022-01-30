@@ -1,5 +1,5 @@
 const testCode = `
-ads = 32+32
+"hello".poop()
 `; // 1+1-3
 
 const Lexer = require('./lexer');
