@@ -16,6 +16,7 @@ const tests = [
     require('./math-operations'),
     require('./variables'),
     require('./native-functions'),
+    require('./user-functions'),
 ];
 const manualTests = [
     23

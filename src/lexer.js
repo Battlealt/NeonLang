@@ -21,6 +21,7 @@ const spec = [
     // Keywords
     // -- Variables:
     [/^(var|let)\b/, "DEFINE"],
+    [/^\bfun\b/, "F_DEFINE"],
     
     // ---------------------------
     // Functional

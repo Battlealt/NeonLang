@@ -95,9 +95,15 @@ module.exports = class Parser {
     }
 
     blockStatement() {
-        this.advance('LBLOCK', '{');
-        const body = this.statementList('RBLOCK');
-        this.advance('RBLOCK', '}');
+        let body;
+        if (this.next?.type === 'LBLOCK') {
+            this.advance('LBLOCK', '{');
+            body = this.statementList('RBLOCK');
+            this.advance('RBLOCK', '}');
+        } else {
+            body = this.statement();
+        }
+
         return {
             type: 'BLOCK',
             body,
@@ -133,11 +139,51 @@ module.exports = class Parser {
         }
     }
 
+    assignment(name) {
+        this.advance('ASSIGNMENT');
+        let value = this.statement();
+
+        return {
+            type: 'ASSIGN',
+            name,
+            value
+        };
+    }
+
     identifier() {
         let identifier = this.next;
         this.advance('IDENTIFIER');
-        if (this.next?.type === 'LPAREN') return this.functionCall(identifier);
+        
+        switch (this.next?.type) {
+            case 'LPAREN':
+                return this.functionCall(identifier);
+            case 'ASSIGNMENT':
+                return this.assignment(identifier);
+        }
+
         return identifier;
+    }
+
+    functionDefinition() {
+        // Get function name
+        this.advance('F_DEFINE');
+        const name = this.next;
+        this.advance('IDENTIFIER');
+
+        // Get the arguments
+        this.advance('LPAREN');
+        let argNames = this.argumentList('RPAREN');
+        this.advance('RPAREN');
+
+        // Get the function body
+        const body = this.blockStatement();
+
+        return {
+            type: 'FUNCTION_DEFINITION',
+            name,
+            arguments: argNames,
+            body,
+        };
     }
 
     primaryStatement() {
@@ -157,6 +203,8 @@ module.exports = class Parser {
                 return this.unary();
             case 'IDENTIFIER':
                 return this.identifier();
+            case 'F_DEFINE':
+                return this.functionDefinition();
             default:
                 const r = this.next;
                 this.advance();
